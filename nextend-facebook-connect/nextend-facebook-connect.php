@@ -4,7 +4,7 @@
 Plugin Name: Nextend Facebook Connect
 Plugin URI: http://nextendweb.com/
 Description: This plugins helps you create Facebook login and register buttons. The login and register process only takes one click.
-Version: 1.4.59
+Version: 1.5.9
 Author: Roland Soos
 License: GPL2
 */
@@ -115,7 +115,7 @@ For login page
 
 function new_fb_login() {
 
-  if ($_REQUEST['loginFacebook'] == '1') {
+  if (isset($_REQUEST['loginFacebook']) && $_REQUEST['loginFacebook'] == '1') {
     new_fb_login_action();
   }
 }
@@ -145,7 +145,7 @@ function new_fb_login_action() {
     try {
 
       // Proceed knowing you have a logged in user who's authenticated.
-      $user_profile = $facebook->api('/me');
+      $user_profile = $facebook->api('/me', 'GET', array('fields' => 'id,name,email,first_name,last_name'));
       $ID = $wpdb->get_var($wpdb->prepare('
         SELECT ID FROM ' . $wpdb->prefix . 'social_users WHERE type = "fb" AND identifier = "%d"
       ', $user_profile['id']));
@@ -158,14 +158,16 @@ function new_fb_login_action() {
       if (!is_user_logged_in()) {
         if ($ID == NULL) { // Register
 
-          if (!isset($user_profile['email'])) $user_profile['email'] = $user_profile['username'] . '@facebook.com';
+          if (!isset($user_profile['email'])) $user_profile['email'] = $user_profile['id'] . '@facebook.com';
           $ID = email_exists($user_profile['email']);
           if ($ID == false) { // Real register
 
             require_once (ABSPATH . WPINC . '/registration.php');
             $random_password = wp_generate_password($length = 12, $include_standard_special_chars = false);
             if (!isset($new_fb_settings['fb_user_prefix'])) $new_fb_settings['fb_user_prefix'] = 'facebook-';
-            $sanitized_user_login = sanitize_user($new_fb_settings['fb_user_prefix'] . preg_replace('/[^A-Za-z0-9\-]/', '', strtolower($user_profile['first_name']) . '_'.strtolower($user_profile['last_name']))); 
+            
+            $username = strtolower( $user_profile['first_name'] . $user_profile['last_name'] );
+            $sanitized_user_login = sanitize_user($new_fb_settings['fb_user_prefix'] . $username);
             if (!validate_username($sanitized_user_login)) {
               $sanitized_user_login = sanitize_user('facebook' . $user_profile['id']);
             }
@@ -204,7 +206,7 @@ function new_fb_login_action() {
             ));
           }
           if (isset($new_fb_settings['fb_redirect_reg']) && $new_fb_settings['fb_redirect_reg'] != '' && $new_fb_settings['fb_redirect_reg'] != 'auto') {
-            set_site_transient( nextend_uniqid().'_fb_r', $new_twitter_settings['twitter_redirect_reg'], 3600);
+            set_site_transient( nextend_uniqid().'_fb_r', $new_fb_settings['fb_redirect_reg'], 3600);
           }
         }
         if ($ID) { // Login
@@ -349,10 +351,10 @@ function new_add_fb_login_form() {
     (function($) {
       if(!has_social_form){
         has_social_form = true;
-        var loginForm = $('#loginform,#registerform,#front-login-form');
+        var loginForm = $('#loginform,#registerform,#front-login-form,#setupform');
         socialLogins = $('<div class="newsociallogins" style="text-align: center;"><div style="clear:both;"></div></div>');
         if(loginForm.find('input').length > 0)
-          loginForm.prepend("<h3 style='text-align:center;'>OR</h3>");
+          loginForm.prepend("<h3 style='text-align:center;'><?php _e('OR'); ?></h3>");
         loginForm.prepend(socialLogins);
         socialLogins = loginForm.find('.newsociallogins');
       }
@@ -415,7 +417,7 @@ add_filter('plugin_action_links', 'new_fb_plugin_action_links', 10, 2);
 function new_fb_plugin_action_links($links, $file) {
 
   if ($file != NEW_FB_LOGIN_PLUGIN_BASENAME) return $links;
-  $settings_link = '<a href="' . menu_page_url('nextend-facebook-connect', false) . '">' . esc_html(__('Settings', 'nextend-facebook-connect')) . '</a>';
+  $settings_link = '<a href="' . esc_url(menu_page_url('nextend-facebook-connect', false)) . '">' . esc_html(__('Settings', 'nextend-facebook-connect')) . '</a>';
   array_unshift($links, $settings_link);
   return $links;
 }
@@ -427,19 +429,19 @@ Miscellaneous functions
 function new_fb_sign_button() {
 
   global $new_fb_settings;
-  return '<a href="' . new_fb_login_url() . (isset($_GET['redirect_to']) ? '&redirect=' . $_GET['redirect_to'] : '') . '" rel="nofollow">' . $new_fb_settings['fb_login_button'] . '</a><br />';
+  return '<a href="' . esc_url(new_fb_login_url() . (isset($_GET['redirect_to']) ? '&redirect=' . $_GET['redirect_to'] : '')) . '" rel="nofollow">' . $new_fb_settings['fb_login_button'] . '</a><br />';
 }
 
 function new_fb_link_button() {
 
   global $new_fb_settings;
-  return '<a href="' . new_fb_login_url() . '&redirect=' . new_fb_curPageURL() . '">' . $new_fb_settings['fb_link_button'] . '</a><br />';
+  return '<a href="' . esc_url(new_fb_login_url() . '&redirect=' . new_fb_curPageURL()) . '">' . $new_fb_settings['fb_link_button'] . '</a><br />';
 }
 
 function new_fb_unlink_button() {
 
   global $new_fb_settings;
-  return '<a href="' . new_fb_login_url() . '&action=unlink&redirect=' . new_fb_curPageURL() . '">' . $new_fb_settings['fb_unlink_button'] . '</a><br />';
+  return '<a href="' . esc_url(new_fb_login_url() . '&action=unlink&redirect=' . new_fb_curPageURL()) . '">' . $new_fb_settings['fb_unlink_button'] . '</a><br />';
 }
 
 function new_fb_curPageURL() {
@@ -473,6 +475,8 @@ function new_fb_redirect() {
       $redirect = site_url();
     }
   }
+  $redirect = wp_sanitize_redirect($redirect);
+  $redirect = wp_validate_redirect($redirect, site_url());
   header('LOCATION: ' . $redirect);
   delete_site_transient( nextend_uniqid().'_fb_r');
   exit;
