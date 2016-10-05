@@ -277,6 +277,7 @@ function new_fb_login_action() {
     header('Location: ' . $loginUrl);
     exit;
   }else{
+    wp_redirect('/login');
     echo "Login error!";
     exit;
   }
