@@ -378,8 +378,8 @@ function new_fb_insert_avatar($avatar = '', $id_or_email, $size = 96, $default =
   if (is_numeric($id_or_email)) {
     $id = $id_or_email;
   } else if (is_string($id_or_email)) {
-    $u = get_user_by('email', $id_or_email);
-    $id = $u->id;
+    if( $u = get_user_by('email', $id_or_email) )
+    	$id = $u->ID;
   } else if (is_object($id_or_email)) {
     $id = $id_or_email->user_id;
   }
