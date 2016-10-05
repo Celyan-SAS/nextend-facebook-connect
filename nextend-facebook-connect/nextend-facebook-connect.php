@@ -352,7 +352,7 @@ function new_add_fb_login_form() {
     (function($) {
       if(!has_social_form){
         has_social_form = true;
-        var loginForm = $('#loginform,#registerform,#front-login-form,#setupform');
+        var loginForm = $('#loginform,#registerform,#front-login-form,#setupform,form[id^="loginform"]');
         socialLogins = $('<div class="newsociallogins" style="text-align: center;"><div style="clear:both;"></div></div>');
         if(loginForm.find('input').length > 0)
           loginForm.prepend("<h3 style='text-align:center;'><?php _e('OR'); ?></h3>");
