@@ -344,14 +344,14 @@ function new_add_fb_login_form() {
 
 ?>
   <script type="text/javascript">
-  
-    $(document).ready(function() {
+  (function($) {
+    jQuery(document).ready(function() {
 	  if(jQuery.type(has_social_form) === "undefined"){
 	    var has_social_form = false;
 	    var socialLogins = null;
 	  }
 	  jQuery(document).ready(function(){
-	(function($) {    
+	    
 	      if(!has_social_form){
 	        has_social_form = true;
 	        var loginForm = $('#loginform,#registerform,#front-login-form,#setupform,form[id^="loginform"]');
@@ -365,10 +365,10 @@ function new_add_fb_login_form() {
 	        socialLogins.prepend('<?php echo addslashes(preg_replace('/^\s+|\n|\r|\s+$/m', '', new_fb_sign_button())); ?>');
 	        window.fb_added = true;
 	      }
-	      }(jQuery));
+	    
 	  });
   });
-
+  }(jQuery));
   </script>
   <?php
 }
