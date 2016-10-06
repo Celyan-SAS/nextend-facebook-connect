@@ -345,7 +345,7 @@ function new_add_fb_login_form() {
 ?>
   <script type="text/javascript">
   (function($) {
-    $(document).ready(function() {
+    jQuery(document).ready(function() {
 	  if(jQuery.type(has_social_form) === "undefined"){
 	    var has_social_form = false;
 	    var socialLogins = null;
